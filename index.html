@@ -557,7 +557,15 @@ function renderTable(){
 }
 window.onload = function(){
 
-  renderTable();
+  // Load saved data first
+  let saved = localStorage.getItem("supplierData");
+
+  if(saved){
+    loadData();
+  } else {
+    renderTable();
+    saveData(); // save default dataset first time
+  }
 
   cleanNan();
   capitalizeTable();
@@ -568,6 +576,7 @@ window.onload = function(){
 
     if(isAdmin){
       saveData();
+      populate(); // refresh dropdowns
     }
 
   });
