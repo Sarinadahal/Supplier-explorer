@@ -186,12 +186,15 @@ function fill(id,set,label){
 }
 function filter(){
 
-  let q = search.value.toLowerCase();
+  let q = document.getElementById("search").value.toLowerCase();
 
-  let c = category.value;
-  let s = subcategory.value;
-  let m = manufacturer.value;
-  let v = vendor.value;
+let c = document.getElementById("category").value;
+
+let s = document.getElementById("subcategory").value;
+
+let m = document.getElementById("manufacturer").value;
+
+let v = document.getElementById("vendor").value;
 
   rows().forEach(r=>{
 
@@ -260,11 +263,15 @@ function adminLogin(){
     alert("Wrong password");
   }
 }
-search.oninput=filter;
-category.onchange=filter;
-subcategory.onchange=filter;
-manufacturer.onchange=filter;
-vendor.onchange=filter;
+document.getElementById("search").oninput = filter;
+
+document.getElementById("category").onchange = filter;
+
+document.getElementById("subcategory").onchange = filter;
+
+document.getElementById("manufacturer").onchange = filter;
+
+document.getElementById("vendor").onchange = filter;
 
 function cleanNan(){
   rows().forEach(r=>{
