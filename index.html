@@ -216,10 +216,23 @@ function filter(){
 }
 
 function addDeleteBtn(row){
+
   if(isAdmin){
-    let c=row.insertCell(6);
-    c.innerHTML=`<button class="delete" onclick="del(this)">❌</button>`;
+
+    let c = row.insertCell(6);
+
+    let btn = document.createElement("button");
+
+    btn.className = "delete";
+
+    btn.innerText = "❌";
+
+    btn.onclick = () => del(btn);
+
+    c.appendChild(btn);
+
   }
+
 }
 
 function adminLogin(){
