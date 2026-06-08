@@ -108,7 +108,28 @@ tr:hover{background:#eef5ff}
 
 </table>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC13-1C45J9-ZK7I5a5vLfx7t8nFVlF-ZE",
+  authDomain: "supplier-explorer.firebaseapp.com",
+  projectId: "supplier-explorer",
+  storageBucket: "supplier-explorer.firebasestorage.app",
+  messagingSenderId: "41799017895",
+  appId: "1:41799017895:web:cec872b08242b51e300282",
+  measurementId: "G-NESYQTWHJK"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 let isAdmin = false;
 
@@ -243,45 +264,71 @@ function cleanNan(){
     }
   });
 }
-function saveData(){
+async function saveData(){
+
   let data = [];
 
-  rows().forEach(r=>{
+  rows().forEach(r => {
+
     let row = [];
+
     for(let i=0;i<6;i++){
       row.push(r.children[i].innerText.trim());
     }
+
     data.push(row);
+
   });
 
-  localStorage.setItem("supplierData", JSON.stringify(data));
+  await setDoc(doc(db, "supplier", "master"), {
+    data: data
+  });
+
 }
 
-function loadData(){
-  let data = JSON.parse(localStorage.getItem("supplierData"));
+async function loadData(){
 
-  if(!data) return;
+  const snap = await getDoc(doc(db, "supplier", "master"));
+
+  if(!snap.exists()) return false;
+
+  const data = snap.data().data;
 
   let tbody = document.querySelector("#table tbody");
+
   tbody.innerHTML = "";
 
-  data.forEach(row=>{
+  data.forEach(row => {
+
     let r = tbody.insertRow();
-    row.forEach(cell=>{
+
+    row.forEach(cell => {
+
       let c = r.insertCell();
+
       c.contentEditable = isAdmin;
+
       c.innerText = cell;
+
     });
 
     if(isAdmin){
       addDeleteBtn(r);
     }
+
   });
+
+  return true;
+
 }
 
 
-function addRow(){
-  if(!isAdmin){alert("Admin only");return;}
+async function addRow(){
+
+  if(!isAdmin){
+    alert("Admin only");
+    return;
+  }
 
   let t=document.querySelector("#table tbody");
   let r=t.insertRow();
@@ -292,14 +339,24 @@ function addRow(){
   }
 
   addDeleteBtn(r);
-  saveData(); 
+
+  await saveData();
+
   populate();
 }
-function del(btn){
-  if(!isAdmin){alert("Admin only");return;}
+async function del(btn){
+
+  if(!isAdmin){
+    alert("Admin only");
+    return;
+  }
+
   btn.closest("tr").remove();
-  saveData(); 
+
+  await saveData();
+
   populate();
+
 }
 function capitalizeTable(){
 
@@ -557,28 +614,34 @@ function renderTable(){
   });
 
 }
-window.onload = function(){
+window.onload = async function(){
 
-  // Load saved data first
-  let saved = localStorage.getItem("supplierData");
+  let loaded = await loadData();
 
-  if(saved){
-    loadData();
-  } else {
+  if(!loaded){
+
     renderTable();
-    saveData(); // save default dataset first time
+
+    await saveData();
+
   }
 
   cleanNan();
+
   capitalizeTable();
+
   populate();
+
   filter();
 
-  document.querySelector("#table").addEventListener("input", () => {
+  document.querySelector("#table").addEventListener("input", async () => {
 
     if(isAdmin){
-      saveData();
-      populate(); // refresh dropdowns
+
+      await saveData();
+
+      populate();
+
     }
 
   });
