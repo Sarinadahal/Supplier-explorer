@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Supplier Explorer</title>
+
+<style>
+:root{
+  --blue:#003B5D;
+  --light:#f8fafc;
+}
+
+body{font-family:Arial;margin:0}
+
+/* HEADER */
+header{background:var(--blue);color:white;padding:20px}
+h1{margin:0}
+
+/* PANEL */
+.panel{
+  margin:15px;
+  background:var(--light);
+  border-radius:10px;
+  padding:10px;
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+}
+
+input,select{
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  background:white;
+  font-size:14px;
+}
+/* BUTTON */
+button{
+  padding:8px 10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.primary{background:#1A3FD8;color:white}
+.delete{color:red;background:none}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th{
+  background:var(--blue);
+  color:white;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:6px;
+}
+
+tr:hover{background:#eef5ff}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🔎 Supplier Explorer</h1>
+</header>
+
+<div class="panel">
+<div class="grid">
+
+<input id="search" placeholder="Search">
+
+<select id="category"></select>
+<select id="subcategory"></select>
+<select id="manufacturer"></select>
+<select id="vendor"></select>
+
+<button onclick="addRow()">➕ Add</button>
+<button onclick="adminLogin()">🔒 Admin Mode</button>
+
+</div>
+</div>
+
+<table id="table">
+<thead>
+<tr>
+<th>Category</th>
+<th>Subcategory</th>
+<th>Manufacturer</th>
+<th>1st Vendor</th>
+<th>2nd Vendor</th>
+<th>3rd Vendor</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+<script>
+
+let isAdmin = false;
+
+const rows = () => document.querySelectorAll("#table tbody tr");
+
+function populate(){
+
+  let cat = new Set(),
+      sub = new Set(),
+      man = new Set(),
+      ven = new Set();
+
+  rows().forEach(r=>{
+
+    cat.add(r.children[0].innerText);
+    sub.add(r.children[1].innerText);
+    man.add(r.children[2].innerText);
+
+    ven.add(r.children[3].innerText);
+    ven.add(r.children[4].innerText);
+    ven.add(r.children[5].innerText);
+
+  });
+
+  fill("category",cat,"All Categories");
+  fill("subcategory",sub,"All Subcategories");
+  fill("manufacturer",man,"All Manufacturers");
+  fill("vendor",ven,"All Vendors");
+}
+function fill(id,set,label){
+
+  let s = document.getElementById(id);
+
+  s.innerHTML = `<option value="">${label}</option>`;
+
+  [...set].sort().forEach(v=>{
+
+    if(v && v.toLowerCase() !== "nan"){
+
+      let o = document.createElement("option");
+
+      o.text = v
+        .toLowerCase()
+        .replace(/\b\w/g, l => l.toUpperCase());
+
+      o.value = v;
+
+      s.add(o);
+
+    }
+
+  });
+
+}
+function filter(){
+
+  let q = search.value.toLowerCase();
+
+  let c = category.value;
+  let s = subcategory.value;
+  let m = manufacturer.value;
+  let v = vendor.value;
+
+  rows().forEach(r=>{
+
+    let txt = r.innerText.toLowerCase();
+
+    let ven = [
+      r.children[3].innerText,
+      r.children[4].innerText,
+      r.children[5].innerText
+    ];
+
+    let show =
+      (!q || txt.includes(q)) &&
+      (!c || r.children[0].innerText == c) &&
+      (!s || r.children[1].innerText == s) &&
+      (!m || r.children[2].innerText == m) &&
+      (!v || ven.includes(v));
+
+    r.style.display = show ? "" : "none";
+
+  });
+}
+
+function addDeleteBtn(row){
+  if(isAdmin){
+    let c=row.insertCell(6);
+    c.innerHTML=`<button class="delete" onclick="del(this)">❌</button>`;
+  }
+}
+
+function adminLogin(){
+  let p = prompt("Enter password");
+
+  // If user clicked Cancel, do nothing
+  if (p === null) {
+    return;
+  }
+
+  if (p === "admin123") {
+    isAdmin = true;
+
+    rows().forEach(r => {
+      for (let i = 0; i < 6; i++) {
+        r.children[i].contentEditable = true;
+      }
+      if (r.children.length < 7) {
+        addDeleteBtn(r);
+      }
+    });
+
+    alert("Admin mode enabled");
+  } else {
+    alert("Wrong password");
+  }
+}
+search.oninput=filter;
+category.onchange=filter;
+subcategory.onchange=filter;
+manufacturer.onchange=filter;
+vendor.onchange=filter;
+
+function cleanNan(){
+  rows().forEach(r=>{
+    for(let i=0;i<6;i++){
+      let cell = r.children[i];
+
+      if(cell.innerText.trim().toLowerCase() === "nan"){
+        cell.innerText = "";
+      }
+    }
+  });
+}
+function saveData(){
+  let data = [];
+
+  rows().forEach(r=>{
+    let row = [];
+    for(let i=0;i<6;i++){
+      row.push(r.children[i].innerText.trim());
+    }
+    data.push(row);
+  });
+
+  localStorage.setItem("supplierData", JSON.stringify(data));
+}
+
+function loadData(){
+  let data = JSON.parse(localStorage.getItem("supplierData"));
+
+  if(!data) return;
+
+  let tbody = document.querySelector("#table tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(row=>{
+    let r = tbody.insertRow();
+    row.forEach(cell=>{
+      let c = r.insertCell();
+      c.contentEditable = isAdmin;
+      c.innerText = cell;
+    });
+
+    if(isAdmin){
+      addDeleteBtn(r);
+    }
+  });
+}
+
+
+function addRow(){
+  if(!isAdmin){alert("Admin only");return;}
+
+  let t=document.querySelector("#table tbody");
+  let r=t.insertRow();
+
+  for(let i=0;i<6;i++){
+    let c=r.insertCell(i);
+    c.contentEditable=true;
+  }
+
+  addDeleteBtn(r);
+  saveData(); 
+}
+function del(btn){
+  if(!isAdmin){alert("Admin only");return;}
+  btn.closest("tr").remove();
+  saveData(); 
+}
+function capitalizeTable(){
+
+  const keepUpper = [
+    "ABB","FS","GE","HP","APC","RSA",
+    "RTDS","INS","SQD","BAE","ERL","XHF",
+    "OCC","RAM","IT","UPC","KVM","SHI",
+  ];
+
+  rows().forEach(r=>{
+
+    for(let i=0;i<6;i++){
+
+      let cell = r.children[i];
+      let text = cell.innerText.trim();
+
+      if(keepUpper.includes(text.toUpperCase())){
+        cell.innerText = text.toUpperCase();
+      }
+      else{
+        cell.innerText = text
+          .toLowerCase()
+          .replace(/\b\w/g, l => l.toUpperCase());
+      }
+
+    }
+
+  });
+}
+
+const supplierData = [
+
+["cases","cases","Pelican","HH Bauer","",""],
+["enclosure accessories","batteries","BAE","BAE","",""],
+["enclosure accessories","heaters & thermostats","chromalox","north coast","",""],
+["enclosure accessories","patch panel","corning","anixter","",""],
+["enclosure accessories","batteries","Enersys","Enersys","",""],
+["enclosure accessories","patch panel","FS","FS","",""],
+["enclosure accessories","transformers","hammond","graybar","mouser",""],
+["enclosure accessories","doors","Hoffman","Graybar","",""],
+["enclosure accessories","tap bar","ilsco","stoneway","",""],
+["enclosure accessories","patch panel","L-com","L-com","digi-key",""],
+["enclosure accessories","meter socket","milbank","stoneway","",""],
+["enclosure accessories","patch panel","panduit","Stoneway","digi-key",""],
+["enclosure accessories","hardware","rittal","graybar","McNaughton-McKay","stoneway"],
+["enclosure accessories","door handles","saginaw","saginaw","",""],
+["enclosure accessories","push buttons","schneider","","",""],
+["enclosure accessories","selector switch","schneider","graybar","anixter",""],
+["enclosure accessories","ground bar","SQD","stoneway","",""],
+["enclosure accessories","AC / DC panel","square D","graybar","grainger",""],
+["enclosure accessories","heaters & thermostats","stego","newark","sager",""],
+["enclosure accessories","power strip","tripp lite","digi-key","mouser",""],
+
+["enclosures","fiber enclosure","allied moulded","stoneway","",""],
+["enclosures","metal enclosure","bud industries","graybar","",""],
+["enclosures","metal enclosure","hammond","graybar","McNaughton-McKay",""],
+["enclosures","metal enclosure","Hoffman","hoffman","graybar",""],
+["enclosures","metal enclosure","nema enclosures","nema","",""],
+["enclosures","metal enclosure","panduit electrical","graybar","",""],
+["enclosures","metal enclosure","rittal","graybar","McNaughton-McKay","stoneway"],
+["enclosures","metal enclosure","square D","graybar","",""],
+
+["fault recorder","fault recorder","ERL","cascadia mclaren","",""],
+
+["hardware","electrical fasteners","Anderson","Stoneway","Hubbell","interconnect sales"],
+["hardware","electrical fasteners","anvil","Stoneway","",""],
+["hardware","ground lugs","beckwith","hubbell","",""],
+["hardware","electrical fasteners","b-line","stoneway","",""],
+["hardware","ground lugs","burndy","stoneway","graybar","grainger"],
+["hardware","grounding terminals","burndy","graybar","stoneway",""],
+["hardware","electrical fasteners","hubbell","hubbell","stoneway",""],
+["hardware","electrical fasteners","ilsco","stoneway","grainger",""],
+["hardware","all purpose fasteners","mcmaster-carr","mcmaster-carr","",""],
+["hardware","all purpose fasteners","mkt fasteners","grainger","",""],
+["hardware","electrical fasteners","raco","grainger","",""],
+["hardware","electrical fasteners","unistrut","north coast","",""],
+
+["indicator light","indicator light","c3control","c3control","digi-key",""],
+["indicator light","indicator light","GE","GE","",""],
+
+["IT","Harddrive","adesso","Stoneway","amazon",""],
+["IT","Harddrive","advantech","advantech","digi-key",""],
+["IT","UPC","APC","Td synnex","SHI","digi-key"],
+["IT","KVM","aten","td synnex","",""],
+["IT","Harddrive","benq","shi","",""],
+["IT","Harddrive","blackbox","td synnex","shi",""],
+["IT","ethernet switch","cisco","td synnex","",""],
+["IT","Harddrive","compulink","anixter","stoneway",""],
+["IT","server","dell","SHI","",""],
+["IT","transciever","fortinet","SHI","",""],
+["IT","Harddrive","honeywell","stoneway","honeywell control","amazon"],
+["IT","Harddrive","HP","shi","td synnex",""],
+["IT","server","HP","SHI","",""],
+["IT","Harddrive","INS","INS","",""],
+["IT","Harddrive","juniper","td synnex","shi","INS"],
+["IT","gateway","moxa","TD synnex","Compunet","digi-key"],
+["IT","Harddrive","nozomi","nozomi","",""],
+["IT","Harddrive","palo alto","shi","td synnex",""],
+["IT","Harddrive","pansonic","shi","td synnex",""],
+["IT","Harddrive","qnap","td synnex","shi",""],
+["IT","Harddrive","qnap","td synnex","",""],
+["IT","ethernet switch","RLH industries","stoneway","",""],
+["IT","physical security","RSA","td synnex","climb channel solutions","compunet"],
+["IT","laptop","ruggedcomm","mckaig sales","",""],
+["IT","Harddrive","segate","td synnex","shi",""],
+["IT","converters","startech","shi","td synnex",""],
+["IT","RAM","Swissbit","TD Synnex","SHI","Mouser"],
+["IT","Harddrive","Western Digital","TD Synnex","SHI","CDW"],
+["labels","printable","Aonomi","amazon","",""],
+["labels","printable","brady","digi-key","",""],
+["labels","printable","epson","amazon","",""],
+["lockout switch","lockout switch","electroswitch","electroswitch (carlson sales)","",""],
+["lockout switch","lockout switch","shallco","shallco","",""],
+["low voltage","interlock bar","ABB","ABB","",""],
+["low voltage","power supply","ABB","graybar","",""],
+["low voltage","RTDX extractor","ABB","stoneway","",""],
+["low voltage","ring terminals","ABB Sta-kon","stoneway","graybar","digi-key"],
+["low voltage","power supply","absopulse","absopulse","",""],
+["low voltage","power supply","Acopian","acopian","",""],
+["low voltage","conduit","AFC","grainger","",""],
+["low voltage","ring terminals","allen bradley","Stoneway","",""],
+["low voltage","din rail","Altech","rs america","",""],
+["low voltage","Minature Curcit breaker","Altech","stoneway","",""],
+["low voltage","transducer","american aerospace controls","american aerospace controls","",""],
+["low voltage","power supply","APC","SHI","stoneway",""],
+["low voltage","conduit","Appleton","stoneway","",""],
+["low voltage","aux relay","arteche","mckaig sales","",""],
+["low voltage","cable ties","Boacua","amazon","",""],
+["low voltage","disconnect switch","bussman","stoneway","",""],
+["low voltage","fuses","bussman","stoneway","grainger",""],
+["low voltage","relay","bussman","stoneway","",""],
+["low voltage","terminal block","bussman","stoneway","",""],
+["low voltage","junction box","carlson","stoneway","",""],
+["low voltage","Minature Curcit breaker","eaton LV","stoneway","rs americas","digi-key"],
+["low voltage","conduit","electri-flex","stoneway","",""],
+["low voltage","connector & terminal block","entrelec","stoneway","",""],
+["low voltage","Minature Curcit breaker","ferraz shawmut","stoneway","",""],
+["low voltage","aux relay","GE","GE","",""],
+["low voltage","fuse blocks","GE","GE","helberg",""],
+["low voltage","relay","GE","GE","helberg",""],
+["low voltage","terminal strips","ideal","graybar","",""],
+["low voltage","switches & indicators","idec","stoneway","",""],
+["low voltage","light switch","levitron","stoneway","",""],
+["low voltage","fuses","littelfuse","stoneway","",""],
+["low voltage","terminal block","marathon","mahoney controls","",""],
+["low voltage","power supply","meanwell","sager","master electronics",""],
+["low voltage","fuses","mersen","stoneway","",""],
+["low voltage","Minature Curcit breaker","mersen","stoneway","",""],
+["low voltage","terminal block","mersen","stoneway","",""],
+["low voltage","conduit","myers","stoneway","",""],
+["low voltage","glow plug","ngk","north coast","",""],
+["low voltage","din rail","panduit","digi-key","",""],
+["low voltage","duct run way","panduit","stoneway","digi-key","anixter"],
+["low voltage","ring terminals","panduit","stoneway","digi-key","anixter"],
+["low voltage","aux relay","phoenix contact","interconnect sales","digi-key",""],
+["low voltage","dc/dc converters","phoenix contact","interconnect sales","",""],
+["low voltage","din rail","phoenix contact","interconnect sales","",""],
+["low voltage","marker strips","phoenix contact","interconnect sales","",""],
+["low voltage","Minature Curcit breaker","phoenix contact","interconnect sales","",""],
+["low voltage","terminal block","phoenix contact","interconnect sales","",""],
+["low voltage","connectors","pomona electronics","digi-key","rs americas",""],
+["low voltage","power supply","power first","grainger","",""],
+["low voltage","power supply","puls","digi-key","",""],
+["low voltage","power supply","puls","digi-key","",""],
+["low voltage","fiber converters","RLH industries","stoneway","",""],
+["low voltage","power supply","RLH industries","stoneway","",""],
+["low voltage","power relay","rockwell","McNaughton-McKay","",""],
+["low voltage","fuses","schurter","digi-key","",""],
+["low voltage","relay","square D","graybar","",""],
+["low voltage","ring terminals","sta-kon","stoneway","grainger",""],
+["low voltage","terminal block","states","states","",""],
+["low voltage","aux relay","struthers-dunn","master electronics","",""],
+["low voltage","aux relay","TE Connectivity","Stoneway","",""],
+["low voltage","ring terminals","Thomas & Betts","Stoneway","digi-key","RS Amercica"],
+["low voltage","power supply","Wago","stoneway","digi-key",""],
+["low voltage","Minature Curcit breaker","weidmuller","stoneway","digi-key",""],
+["low voltage","terminal block","weidmuller","stoneway","digi-key",""],
+["mid/high voltage","insulators, switches, fault interupters","S&C","north coast","",""],
+["rental","rental","doble rental","intellirent","a-rent",""],
+["rental","rental","omicron rental","intellirent","a-rent",""],
+["safety","safety equipment","3m","grainger","",""],
+["safety","safety equipment","70e solutions","70e solutions","",""],
+["Software","Software","acronis","climb channel","td synnex",""],
+["Software","Software","Aveva","Industrial software solutions","",""],
+["Software","Software","copa data","copa data","",""],
+["Software","Software","Dragos","Dragos","",""],
+["Software","Software","open systems international","open systems international","",""],
+["test","test","RTDS","RTDS","",""],
+["test equipment","test equipment","doble (buy)","doble","",""],
+["test equipment","test equipment","omicron (buy)","omicron","",""],
+["test switch","test switch","ABB","ABB","",""],
+["test switch","test switch accessories","ABB","ABB","galco",""],
+["test switch","test switch","states","states","",""],
+["test switch","test switch accessories","states","states","",""],
+["transformers","transformers","ABB","Nexus sales","",""],
+["transformers","transformers","accuenergy","accuenergy","",""],
+["transformers","transformers","crompton","stoneway","",""],
+["transformers","transformers","crompton","stoneway","digi-key",""],
+["transformers","transformers","flex-core","flex-core","",""],
+["transformers","transformers","GE","GE","",""],
+["transformers","transformers","Lindsey systems","anixter","",""],
+["transformers","transformers","nk technologies","stoneway","",""],
+["transformers","transformers","phoenix contact","interconnect sales","",""],
+["transformers","transformers","Ritz transformers","cascadia mclaren","",""],
+["weather monitoring","weather monitoring","cambell scientific","cambell scientific","",""],
+["wire and cable","wire and cable","allied wire and cable","Anixter","stoneway",""],
+["wire and cable","jumper cables","amphenol","","",""],
+["wire and cable","wire and cable","anixter","anixter","",""],
+["wire and cable","wire and cable","belden","anixter","stoneway",""],
+["wire and cable","wire and cable","belkin","shi","stoneway",""],
+["wire and cable","fiber optic","commscope","anixter","graybar",""],
+["wire and cable","connectors","corning","anixter","stoneway",""],
+["wire and cable","wire and cable","corning","anixter","stoneway",""],
+["wire and cable","jumper cables","eaton","anixter","",""],
+["wire and cable","jumper cables","FS","FS","",""],
+["wire and cable","wire and cable","iewc","anixter","",""],
+["wire and cable","Fiber patch","L-com","L-com","digi-key",""],
+["wire and cable","jumper cables","L-com","L-com","digi-key",""],
+["wire and cable","accessoiries","levitron","anixter","graybar",""],
+["wire and cable","wire and cable","OCC","anixter","stoneway",""],
+["wire and cable","wire and cable","omni","anixter","",""],
+["wire and cable","jumper cables","panduit","","",""],
+["wire and cable","wire and cable","priority wire and cable","anixter","stoneway",""],
+["wire and cable","wire and cable","sequel wire and cable","anixter","",""],
+["wire and cable","wire and cable","southwire","anixter","",""],
+["wire and cable","jumper cables","startech","digi-key","",""],
+["wire and cable","wire and cable","unified wire and cable","anixter","",""],
+["","","S&C","Anixter","graybar",""]
+
+];
+function renderTable(){
+
+  const tbody = document.getElementById("tableBody");
+
+  tbody.innerHTML = "";
+
+  supplierData.forEach(row => {
+
+    let tr = document.createElement("tr");
+
+    row.forEach(cellData => {
+
+      let td = document.createElement("td");
+
+      td.contentEditable = isAdmin;
+
+      td.innerText = cellData;
+
+      tr.appendChild(td);
+
+    });
+
+    tbody.appendChild(tr);
+
+  });
+
+}
+window.onload = function(){
+
+  renderTable();
+
+  cleanNan();
+  capitalizeTable();
+  populate();
+  filter();
+
+  document.querySelector("#table").addEventListener("input", () => {
+
+    if(isAdmin){
+      saveData();
+    }
+
+  });
+
+};
+</script>
+
+</body>
+</html>
