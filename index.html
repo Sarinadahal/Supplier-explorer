@@ -108,28 +108,7 @@ tr:hover{background:#eef5ff}
 
 </table>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC13-1C45J9-ZK7I5a5vLfx7t8nFVlF-ZE",
-  authDomain: "supplier-explorer.firebaseapp.com",
-  projectId: "supplier-explorer",
-  storageBucket: "supplier-explorer.firebasestorage.app",
-  messagingSenderId: "41799017895",
-  appId: "1:41799017895:web:cec872b08242b51e300282",
-  measurementId: "G-NESYQTWHJK"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+<script>
 
 let isAdmin = false;
 
@@ -186,15 +165,12 @@ function fill(id,set,label){
 }
 function filter(){
 
-  let q = document.getElementById("search").value.toLowerCase();
+  let q = search.value.toLowerCase();
 
-let c = document.getElementById("category").value;
-
-let s = document.getElementById("subcategory").value;
-
-let m = document.getElementById("manufacturer").value;
-
-let v = document.getElementById("vendor").value;
+  let c = category.value;
+  let s = subcategory.value;
+  let m = manufacturer.value;
+  let v = vendor.value;
 
   rows().forEach(r=>{
 
@@ -219,23 +195,10 @@ let v = document.getElementById("vendor").value;
 }
 
 function addDeleteBtn(row){
-
   if(isAdmin){
-
-    let c = row.insertCell(6);
-
-    let btn = document.createElement("button");
-
-    btn.className = "delete";
-
-    btn.innerText = "❌";
-
-    btn.onclick = () => del(btn);
-
-    c.appendChild(btn);
-
+    let c=row.insertCell(6);
+    c.innerHTML=`<button class="delete" onclick="del(this)">❌</button>`;
   }
-
 }
 
 function adminLogin(){
@@ -263,15 +226,11 @@ function adminLogin(){
     alert("Wrong password");
   }
 }
-document.getElementById("search").oninput = filter;
-
-document.getElementById("category").onchange = filter;
-
-document.getElementById("subcategory").onchange = filter;
-
-document.getElementById("manufacturer").onchange = filter;
-
-document.getElementById("vendor").onchange = filter;
+search.oninput=filter;
+category.onchange=filter;
+subcategory.onchange=filter;
+manufacturer.onchange=filter;
+vendor.onchange=filter;
 
 function cleanNan(){
   rows().forEach(r=>{
@@ -284,71 +243,45 @@ function cleanNan(){
     }
   });
 }
-async function saveData(){
-
+function saveData(){
   let data = [];
 
-  rows().forEach(r => {
-
+  rows().forEach(r=>{
     let row = [];
-
     for(let i=0;i<6;i++){
       row.push(r.children[i].innerText.trim());
     }
-
     data.push(row);
-
   });
 
-  await setDoc(doc(db, "supplier", "master"), {
-    data: data
-  });
-
+  localStorage.setItem("supplierData", JSON.stringify(data));
 }
 
-async function loadData(){
+function loadData(){
+  let data = JSON.parse(localStorage.getItem("supplierData"));
 
-  const snap = await getDoc(doc(db, "supplier", "master"));
-
-  if(!snap.exists()) return false;
-
-  const data = snap.data().data;
+  if(!data) return;
 
   let tbody = document.querySelector("#table tbody");
-
   tbody.innerHTML = "";
 
-  data.forEach(row => {
-
+  data.forEach(row=>{
     let r = tbody.insertRow();
-
-    row.forEach(cell => {
-
+    row.forEach(cell=>{
       let c = r.insertCell();
-
       c.contentEditable = isAdmin;
-
       c.innerText = cell;
-
     });
 
     if(isAdmin){
       addDeleteBtn(r);
     }
-
   });
-
-  return true;
-
 }
 
 
-async function addRow(){
-
-  if(!isAdmin){
-    alert("Admin only");
-    return;
-  }
+function addRow(){
+  if(!isAdmin){alert("Admin only");return;}
 
   let t=document.querySelector("#table tbody");
   let r=t.insertRow();
@@ -359,31 +292,19 @@ async function addRow(){
   }
 
   addDeleteBtn(r);
-
-  await saveData();
-
-  populate();
+  saveData(); 
 }
-async function del(btn){
-
-  if(!isAdmin){
-    alert("Admin only");
-    return;
-  }
-
+function del(btn){
+  if(!isAdmin){alert("Admin only");return;}
   btn.closest("tr").remove();
-
-  await saveData();
-
-  populate();
-
+  saveData(); 
 }
 function capitalizeTable(){
 
   const keepUpper = [
     "ABB","FS","GE","HP","APC","RSA",
     "RTDS","INS","SQD","BAE","ERL","XHF",
-    "OCC","RAM","IT","UPC","KVM","SHI"
+    "OCC","RAM","IT","UPC","KVM","SHI",
   ];
 
   rows().forEach(r=>{
@@ -634,34 +555,19 @@ function renderTable(){
   });
 
 }
-window.onload = async function(){
+window.onload = function(){
 
-  let loaded = await loadData();
-
-  if(!loaded){
-
-    renderTable();
-
-    await saveData();
-
-  }
+  renderTable();
 
   cleanNan();
-
   capitalizeTable();
-
   populate();
-
   filter();
 
-  document.querySelector("#table").addEventListener("input", async () => {
+  document.querySelector("#table").addEventListener("input", () => {
 
     if(isAdmin){
-
-      await saveData();
-
-      populate();
-
+      saveData();
     }
 
   });
