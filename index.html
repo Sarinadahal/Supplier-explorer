@@ -293,11 +293,13 @@ function addRow(){
 
   addDeleteBtn(r);
   saveData(); 
+  populate();
 }
 function del(btn){
   if(!isAdmin){alert("Admin only");return;}
   btn.closest("tr").remove();
   saveData(); 
+  populate();
 }
 function capitalizeTable(){
 
