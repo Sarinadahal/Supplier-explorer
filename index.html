@@ -557,7 +557,13 @@ function renderTable(){
 }
 window.onload = function(){
 
-  renderTable();
+  loadData();
+
+  // If no saved data, load default dataset
+  if (!localStorage.getItem("supplierData")) {
+    renderTable();
+    saveData(); // store initial data
+  }
 
   cleanNan();
   capitalizeTable();
@@ -565,14 +571,13 @@ window.onload = function(){
   filter();
 
   document.querySelector("#table").addEventListener("input", () => {
-
     if(isAdmin){
       saveData();
     }
-
   });
 
 };
+  
 </script>
 
 </body>
