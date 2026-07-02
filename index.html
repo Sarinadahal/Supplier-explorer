@@ -10,7 +10,15 @@
   --light:#f8fafc;
 }
 
-body{font-family:Arial;margin:0}
+body{
+  font-family:Arial;
+  margin:0;
+  background:#ffffff;
+}
+
+table{
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
 
 /* HEADER */
 header{background:var(--blue);color:white;padding:20px}
@@ -53,19 +61,50 @@ button{
 table{
   width:100%;
   border-collapse:collapse;
+  table-layout:fixed;
+  font-size:13px;
 }
 
 th{
   background:var(--blue);
   color:white;
+  font-size:13px;
 }
 
 th,td{
   border:1px solid #ddd;
-  padding:6px;
+  padding:4px 6px;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
 }
 
-tr:hover{background:#eef5ff}
+th:nth-child(1), td:nth-child(1){width:10%;}
+th:nth-child(2), td:nth-child(2){width:14%;}
+th:nth-child(3), td:nth-child(3){width:14%;}
+th:nth-child(4), td:nth-child(4){width:14%;}
+th:nth-child(5), td:nth-child(5){width:14%;}
+th:nth-child(6), td:nth-child(6){width:14%;} 
+th:nth-child(7),
+td:nth-child(7){
+  width:50px;
+  text-align:center;
+}
+
+th:nth-child(4){
+  background:#1f5aa6;
+}
+
+th:nth-child(5){
+  background:#4f7fc4;
+}
+
+th:nth-child(6){
+  background:#718fb8;
+}
+
+tr:hover{
+  background:#eef5ff;
+}
 
 </style>
 </head>
@@ -74,6 +113,11 @@ tr:hover{background:#eef5ff}
 
 <header>
 <h1>🔎 Supplier Explorer</h1>
+
+<p style="margin-top:8px;font-size:14px;opacity:.9;">
+Search approved manufacturers and vendors. Use filters to quickly identify preferred sourcing options.
+</p>
+
 </header>
 
 <div class="panel">
@@ -88,9 +132,10 @@ tr:hover{background:#eef5ff}
 
 <button onclick="addRow()">➕ Add</button>
 <button onclick="adminLogin()">🔒 Admin Mode</button>
+<button onclick="showHelp()">❓ Help</button>
+</div>
+</div>
 
-</div>
-</div>
 
 <table id="table">
 <thead>
@@ -114,6 +159,26 @@ let isAdmin = false;
 
 const rows = () => document.querySelectorAll("#table tbody tr");
 
+function showHelp(){
+
+  alert(
+`Supplier Explorer
+
+How to Use
+• Search by keyword.
+• Filter by Category, Subcategory, Manufacturer, or Vendor.
+• Primary Vendor = Default sourcing choice.
+• Secondary Vendor = Alternate choice if needed.
+• Backup Vendor = Last option.
+
+Feedback & Corrections
+Please contact the ESBuyers Purchasing Team if:
+• A supplier should be added
+• Vendor rankings need adjustment
+• Manufacturer information is incorrect`
+  );
+
+}
 function populate(){
 
   let cat = new Set(),
@@ -150,10 +215,7 @@ function fill(id,set,label){
 
       let o = document.createElement("option");
 
-      o.text = v
-        .toLowerCase()
-        .replace(/\b\w/g, l => l.toUpperCase());
-
+      o.text = v;
       o.value = v;
 
       s.add(o);
@@ -196,8 +258,8 @@ function filter(){
 
 function addDeleteBtn(row){
   if(isAdmin){
-    let c=row.insertCell(6);
-    c.innerHTML=`<button class="delete" onclick="del(this)">❌</button>`;
+    let c = row.insertCell(6);
+    c.innerHTML = '<button class="delete" onclick="del(this)">❌</button>';
   }
 }
 
@@ -211,6 +273,11 @@ function adminLogin(){
 
   if (p === "admin123") {
     isAdmin = true;
+if(document.querySelector("#table thead tr").children.length === 6){
+  let th = document.createElement("th");
+  th.innerText = "Actions";
+  document.querySelector("#table thead tr").appendChild(th);
+}
 
     rows().forEach(r => {
       for (let i = 0; i < 6; i++) {
@@ -243,45 +310,63 @@ function cleanNan(){
     }
   });
 }
+
 function saveData(){
+
   let data = [];
 
-  rows().forEach(r=>{
+  rows().forEach(r => {
+
     let row = [];
+
     for(let i=0;i<6;i++){
       row.push(r.children[i].innerText.trim());
     }
+
     data.push(row);
+
   });
 
   localStorage.setItem("supplierData", JSON.stringify(data));
+
 }
 
 function loadData(){
+
   let data = JSON.parse(localStorage.getItem("supplierData"));
 
   if(!data) return;
 
   let tbody = document.querySelector("#table tbody");
+
   tbody.innerHTML = "";
 
-  data.forEach(row=>{
+  data.forEach(row => {
+
     let r = tbody.insertRow();
-    row.forEach(cell=>{
+
+    row.forEach(cell => {
+
       let c = r.insertCell();
+
       c.contentEditable = isAdmin;
+
       c.innerText = cell;
+
     });
 
     if(isAdmin){
       addDeleteBtn(r);
     }
+
   });
+
 }
-
-
 function addRow(){
-  if(!isAdmin){alert("Admin only");return;}
+  if(!isAdmin){
+    alert("Admin only");
+    return;
+  }
 
   let t=document.querySelector("#table tbody");
   let r=t.insertRow();
@@ -292,42 +377,60 @@ function addRow(){
   }
 
   addDeleteBtn(r);
-  saveData(); 
+  
+  saveData();
+  populate();
+  filter();
 }
 function del(btn){
-  if(!isAdmin){alert("Admin only");return;}
+  if(!isAdmin){
+    alert("Admin only");
+    return;
+  }
+
   btn.closest("tr").remove();
-  saveData(); 
+
+  saveData();
+  populate();
+  filter();
 }
 function capitalizeTable(){
-
-  const keepUpper = [
-    "ABB","FS","GE","HP","APC","RSA",
-    "RTDS","INS","SQD","BAE","ERL","XHF",
-    "OCC","RAM","IT","UPC","KVM","SHI","CDW","AFC",
-  ];
 
   rows().forEach(r=>{
 
     for(let i=0;i<6;i++){
 
       let cell = r.children[i];
+
       let text = cell.innerText.trim();
 
-      if(keepUpper.includes(text.toUpperCase())){
-        cell.innerText = text.toUpperCase();
+      // Preserve special company names
+      if(
+        text === "RS America" ||
+        text === "TD Synnex" ||
+        text === "ABB" ||
+        text === "GE" ||
+        text === "HP" ||
+        text === "FS" ||
+        text === "RSA" ||
+        text === "INS" ||
+        text === "RTDS" ||
+        text === "SHI" ||
+        text === "CDW"
+      ){
+        continue;
       }
-      else{
-        cell.innerText = text
-          .toLowerCase()
-          .replace(/\b\w/g, l => l.toUpperCase());
-      }
+
+      cell.innerText = text
+        .toLowerCase()
+        .replace(/\b\w/g, l => l.toUpperCase());
 
     }
 
   });
-}
 
+}
+ 
 const supplierData = [
 
 ["cases","cases","Pelican","HH Bauer","",""],
@@ -378,34 +481,34 @@ const supplierData = [
 ["indicator light","indicator light","c3control","c3control","digi-key",""],
 ["indicator light","indicator light","GE","GE","",""],
 
-["IT","Harddrive","adesso","Stoneway","amazon",""],
-["IT","Harddrive","advantech","advantech","digi-key",""],
+["IT","Hard Drive","adesso","Stoneway","amazon",""],
+["IT","Hard Drive","advantech","advantech","digi-key",""],
 ["IT","UPC","APC","Td synnex","SHI","digi-key"],
 ["IT","KVM","aten","td synnex","",""],
-["IT","Harddrive","benq","shi","",""],
-["IT","Harddrive","blackbox","td synnex","shi",""],
+["IT","Hard Drive","benq","shi","",""],
+["IT","Hard Drive","blackbox","td synnex","shi",""],
 ["IT","ethernet switch","cisco","td synnex","",""],
-["IT","Harddrive","compulink","anixter","stoneway",""],
+["IT","Hard Drive","compulink","anixter","stoneway",""],
 ["IT","server","dell","SHI","",""],
-["IT","transciever","fortinet","SHI","",""],
-["IT","Harddrive","honeywell","stoneway","honeywell control","amazon"],
-["IT","Harddrive","HP","shi","td synnex",""],
+["IT","Transceiver","fortinet","SHI","",""],
+["IT","Hard Drive","honeywell","stoneway","honeywell control","amazon"],
+["IT","Hard Drive","HP","shi","td synnex",""],
 ["IT","server","HP","SHI","",""],
-["IT","Harddrive","INS","INS","",""],
-["IT","Harddrive","juniper","td synnex","shi","INS"],
+["IT","Hard Drive","INS","INS","",""],
+["IT","Hard Drive","juniper","td synnex","shi","INS"],
 ["IT","gateway","moxa","TD synnex","Compunet","digi-key"],
-["IT","Harddrive","nozomi","nozomi","",""],
-["IT","Harddrive","palo alto","shi","td synnex",""],
-["IT","Harddrive","pansonic","shi","td synnex",""],
-["IT","Harddrive","qnap","td synnex","shi",""],
-["IT","Harddrive","qnap","td synnex","",""],
+["IT","Hard Drive","nozomi","nozomi","",""],
+["IT","Hard Drive","palo alto","shi","td synnex",""],
+["IT","Hard Drive","Panasonic","shi","td synnex",""],
+["IT","Hard Drive","qnap","td synnex","shi",""],
+["IT","Hard Drive","qnap","td synnex","",""],
 ["IT","ethernet switch","RLH industries","stoneway","",""],
 ["IT","physical security","RSA","td synnex","climb channel solutions","compunet"],
 ["IT","laptop","ruggedcomm","mckaig sales","",""],
-["IT","Harddrive","segate","td synnex","shi",""],
+["IT","Hard Drive","Seagate","td synnex","shi",""],
 ["IT","converters","startech","shi","td synnex",""],
 ["IT","RAM","Swissbit","TD Synnex","SHI","Mouser"],
-["IT","Harddrive","Western Digital","TD Synnex","SHI","CDW"],
+["IT","Hard Drive","Western Digital","TD Synnex","SHI","CDW"],
 ["labels","printable","Aonomi","amazon","",""],
 ["labels","printable","brady","digi-key","",""],
 ["labels","printable","epson","amazon","",""],
@@ -419,8 +522,8 @@ const supplierData = [
 ["low voltage","power supply","Acopian","acopian","",""],
 ["low voltage","conduit","AFC","grainger","",""],
 ["low voltage","ring terminals","allen bradley","Stoneway","",""],
-["low voltage","din rail","Altech","RS americas","",""],
-["low voltage","Minature Curcit breaker","Altech","stoneway","",""],
+["low voltage","din rail","Altech","RS America","",""],
+["low voltage","Miniature Circuit Breaker","Altech","stoneway","",""],
 ["low voltage","transducer","american aerospace controls","american aerospace controls","",""],
 ["low voltage","power supply","APC","SHI","stoneway",""],
 ["low voltage","conduit","Appleton","stoneway","",""],
@@ -431,21 +534,21 @@ const supplierData = [
 ["low voltage","relay","bussman","stoneway","",""],
 ["low voltage","terminal block","bussman","stoneway","",""],
 ["low voltage","junction box","carlson","stoneway","",""],
-["low voltage","Minature Curcit breaker","eaton LV","stoneway","RS americas","digi-key"],
+["low voltage","Miniature Circuit Breaker","eaton LV","stoneway","RS America","digi-key"],
 ["low voltage","conduit","electri-flex","stoneway","",""],
 ["low voltage","connector & terminal block","entrelec","stoneway","",""],
-["low voltage","Minature Curcit breaker","ferraz shawmut","stoneway","",""],
+["low voltage","Miniature Circuit Breaker","ferraz shawmut","stoneway","",""],
 ["low voltage","aux relay","GE","GE","",""],
 ["low voltage","fuse blocks","GE","GE","helberg",""],
 ["low voltage","relay","GE","GE","helberg",""],
 ["low voltage","terminal strips","ideal","graybar","",""],
 ["low voltage","switches & indicators","idec","stoneway","",""],
-["low voltage","light switch","levitron","stoneway","",""],
+["low voltage","light switch","Leviton","stoneway","",""],
 ["low voltage","fuses","littelfuse","stoneway","",""],
 ["low voltage","terminal block","marathon","mahoney controls","",""],
 ["low voltage","power supply","meanwell","sager","master electronics",""],
 ["low voltage","fuses","mersen","stoneway","",""],
-["low voltage","Minature Curcit breaker","mersen","stoneway","",""],
+["low voltage","Miniature Circuit Breaker","mersen","stoneway","",""],
 ["low voltage","terminal block","mersen","stoneway","",""],
 ["low voltage","conduit","myers","stoneway","",""],
 ["low voltage","glow plug","ngk","north coast","",""],
@@ -456,9 +559,9 @@ const supplierData = [
 ["low voltage","dc/dc converters","phoenix contact","interconnect sales","",""],
 ["low voltage","din rail","phoenix contact","interconnect sales","",""],
 ["low voltage","marker strips","phoenix contact","interconnect sales","",""],
-["low voltage","Minature Curcit breaker","phoenix contact","interconnect sales","",""],
+["low voltage","Miniature Circuit Breaker","phoenix contact","interconnect sales","",""],
 ["low voltage","terminal block","phoenix contact","interconnect sales","",""],
-["low voltage","connectors","pomona electronics","digi-key","RS americas",""],
+["low voltage","connectors","pomona electronics","digi-key","RS America",""],
 ["low voltage","power supply","power first","grainger","",""],
 ["low voltage","power supply","puls","digi-key","",""],
 ["low voltage","power supply","puls","digi-key","",""],
@@ -471,11 +574,11 @@ const supplierData = [
 ["low voltage","terminal block","states","states","",""],
 ["low voltage","aux relay","struthers-dunn","master electronics","",""],
 ["low voltage","aux relay","TE Connectivity","Stoneway","",""],
-["low voltage","ring terminals","Thomas & Betts","Stoneway","digi-key","RS Americas"],
+["low voltage","ring terminals","Thomas & Betts","Stoneway","digi-key","RS America"],
 ["low voltage","power supply","Wago","stoneway","digi-key",""],
-["low voltage","Minature Curcit breaker","weidmuller","stoneway","digi-key",""],
+["low voltage","Miniature Circuit Breaker","weidmuller","stoneway","digi-key",""],
 ["low voltage","terminal block","weidmuller","stoneway","digi-key",""],
-["mid/high voltage","insulators, switches, fault interupters","S&C","north coast","",""],
+["mid/high voltage","Insulators, Switches, Fault Interrupters","S&C","north coast","",""],
 ["rental","rental","doble rental","intellirent","a-rent",""],
 ["rental","rental","omicron rental","intellirent","a-rent",""],
 ["safety","safety equipment","3m","grainger","",""],
@@ -502,7 +605,7 @@ const supplierData = [
 ["transformers","transformers","nk technologies","stoneway","",""],
 ["transformers","transformers","phoenix contact","interconnect sales","",""],
 ["transformers","transformers","Ritz transformers","cascadia mclaren","",""],
-["weather monitoring","weather monitoring","cambell scientific","cambell scientific","",""],
+["weather monitoring","weather monitoring","Campbell Scientific","Campbell Scientific","",""],
 ["wire and cable","wire and cable","allied wire and cable","Anixter","stoneway",""],
 ["wire and cable","jumper cables","amphenol","","",""],
 ["wire and cable","wire and cable","anixter","anixter","",""],
@@ -516,7 +619,7 @@ const supplierData = [
 ["wire and cable","wire and cable","iewc","anixter","",""],
 ["wire and cable","Fiber patch","L-com","L-com","digi-key",""],
 ["wire and cable","jumper cables","L-com","L-com","digi-key",""],
-["wire and cable","accessoiries","levitron","anixter","graybar",""],
+["wire and cable","Accessories","Leviton","anixter","graybar",""],
 ["wire and cable","wire and cable","OCC","anixter","stoneway",""],
 ["wire and cable","wire and cable","omni","anixter","",""],
 ["wire and cable","jumper cables","panduit","","",""],
@@ -557,13 +660,14 @@ function renderTable(){
 }
 window.onload = function(){
 
-  loadData();
-
-  // If no saved data, load default dataset
-  if (!localStorage.getItem("supplierData")) {
+  if (localStorage.getItem("supplierData")) {
+    loadData();
+  } else {
     renderTable();
-    saveData(); // store initial data
+    saveData();
   }
+
+  console.log(JSON.parse(localStorage.getItem("supplierData")));
 
   cleanNan();
   capitalizeTable();
@@ -573,11 +677,12 @@ window.onload = function(){
   document.querySelector("#table").addEventListener("input", () => {
     if(isAdmin){
       saveData();
+      populate();
     }
   });
 
 };
-  
+
 </script>
 
 </body>
